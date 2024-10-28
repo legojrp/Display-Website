@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import WeatherRadar from "./WeatherRadar"
+import Flights from './Flights';
 
 function Display() {
     const [screen, setScreen] = useState(null);
@@ -11,7 +12,9 @@ function Display() {
     
         // Define a function to fetch data with ipadValue in JSON body
         const fetchData = () => {
-            fetch('http://192.168.0.244:5050/', {
+            const url = new URL(window.location.href);
+            const path = url.pathname.split('/').pop();
+            fetch(`http://192.168.0.152:5050/${path}`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
@@ -50,7 +53,7 @@ function Display() {
         case "flights":
             return (
                 <div style={{background: theme === 'dark' ? 'black' : 'white'}}>
-                    <h1>Flights</h1>
+                    <Flights theme={theme}/>
                 </div>
             );
         case "display":

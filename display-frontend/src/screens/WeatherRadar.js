@@ -29,7 +29,7 @@ const WeatherRadar = ({ theme }) => {
     const [timestamp, setTimestamp] = useState('');
 
     const getRadarUrls = () => {
-        fetch("http://192.168.0.244:5050/weather")
+        fetch("http://192.168.0.152:5050/weather")
             .then(res => res.json())
             .then(data => {
                 const urls = data.radar.past.map(url => ({ url: url.url, time: url.time }));

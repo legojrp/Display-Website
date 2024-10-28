@@ -1,0 +1,14 @@
+format
+
+input
+
+ipad number
+last updated
+current screen
+
+output
+update time
+data
+switch screens?
+dark mode? lightmode?
+settings

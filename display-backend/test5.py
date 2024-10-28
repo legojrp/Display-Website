@@ -9,79 +9,77 @@ from datetime import datetime, timedelta
 fr_api = FlightRadar24API()
 
 # Define the geographic boundaries of the United States
-min_lat = 25    # Southern boundary of the U.S.
-max_lat = 49    # Northern boundary of the U.S.
-min_lon = -125  # Western boundary of the U.S.
-max_lon = -75   # Eastern boundary of the U.S.
+y1, y2, x1, x2 = 49, 24, -125, -60  # (max_lat, min_lat, min_lon, max_lon)
 
-# Create a folder to save heatmap images
-output_folder = "flight_heatmaps"
-os.makedirs(output_folder, exist_ok=True)
+# Create folders to save heatmap images
+output_folder_accum = "flight_heatmaps_accum"
+output_folder_reset = "flight_heatmaps_reset"
+os.makedirs(output_folder_accum, exist_ok=True)
+os.makedirs(output_folder_reset, exist_ok=True)
 
-# Create a grid to accumulate flight counts
-grid_resolution = 100
-heatmap_grid = np.zeros((grid_resolution, grid_resolution))  # Initialize heatmap grid
-flight_history = []  # Store flight data and timestamps
+# Create grids for heatmap accumulation and resetting
+grid_resolution = 200  # Increase grid resolution for better detail
+heatmap_grid_accum = np.zeros((grid_resolution, grid_resolution))  # For the accumulating heatmap
+heatmap_grid_reset = np.zeros((grid_resolution, grid_resolution))  # For the 30-minute resetting heatmap
+flight_history = []  # Store flight data and timestamps for the accumulating heatmap
 
 # Function to get grid indices
 def get_grid_indices(lat, lon):
-    lat_index = int((lat - min_lat) / (max_lat - min_lat) * (grid_resolution - 1))
-    lon_index = int((lon - min_lon) / (max_lon - min_lon) * (grid_resolution - 1))
+    lat_index = int((lat - y2) / (y1 - y2) * (grid_resolution - 1))
+    lon_index = int((lon - x1) / (x2 - x1) * (grid_resolution - 1))
     return lat_index, lon_index
 
-def fetch_flights_and_update_heatmap():
+def fetch_flights_and_update_heatmaps():
     # Get the current time
     current_time = datetime.now()
 
     # Fetch flights currently in the air
-    flights = fr_api.get_flights(bounds=f"{max_lat},{min_lat},{min_lon},{max_lon}")
+    flights = fr_api.get_flights(bounds=f"{y1},{y2},{x1},{x2}")
 
-    # Update heatmap grid and track flight history
+    # Update the accumulating heatmap and track flight history
     if flights:
         for flight in flights:
             lats = flight.latitude
             lons = flight.longitude
             
             # Check if the flight's coordinates are within the bounds of the U.S.
-            if min_lat <= lats <= max_lat and min_lon <= lons <= max_lon:
+            if y2 <= lats <= y1 and x1 <= lons <= x2:
                 lat_index, lon_index = get_grid_indices(lats, lons)
-                heatmap_grid[lat_index, lon_index] += 1  # Increment the count in the grid
+                heatmap_grid_accum[lat_index, lon_index] += 1  # Increment the accumulating heatmap count
+                heatmap_grid_reset[lat_index, lon_index] += 1  # Increment the resetting heatmap count
                 
                 # Store flight data with its timestamp
                 flight_history.append((current_time, lat_index, lon_index))
 
-    # Remove contributions older than one hour from the heatmap grid
-    one_hour_ago = current_time - timedelta(hours=0.5)
-    
-    # Decrement counts in the grid for old flights
-    for timestamp, lat_index, lon_index in flight_history:
-        if timestamp < one_hour_ago:
-            heatmap_grid[lat_index, lon_index] -= 1  # Decrement count for old data
-    
-    # Filter out old flight history entries
-    flight_history[:] = [entry for entry in flight_history if entry[0] >= one_hour_ago]
+    # Remove contributions older than 30 minutes from the accumulating heatmap grid
+    thirty_minutes_ago = current_time - timedelta(minutes=30)
+    flight_history[:] = [entry for entry in flight_history if entry[0] >= thirty_minutes_ago]
 
-    # Apply logarithmic transformation to the heatmap grid
-    heatmap_log = np.log1p(heatmap_grid)  # log1p is used to handle zero values
+    # Create and save the accumulating heatmap
+    plt.figure(figsize=(12, 8))  # Set figure size for better quality
+    plt.imshow(heatmap_grid_accum, cmap='hot', interpolation='nearest', origin='lower',
+               extent=[x1, x2, y2, y1], aspect='auto')  # Use aspect='auto' for proper scaling
+    plt.axis('off')  # Turn off the axis
+    plt.savefig(os.path.join(output_folder_accum, f"heatmap_accum_{int(time.time())}.png"), bbox_inches='tight', pad_inches=0, dpi=300)  # Set dpi for better quality
+    plt.close()
 
-    # Create the heatmap
-    plt.imshow(heatmap_log, cmap='hot', interpolation='nearest', origin='lower',
-               extent=[min_lon, max_lon, min_lat, max_lat])
-    
-    plt.colorbar(label="Log Flight Density")
-    plt.title(f"Flight Density Heatmap at {current_time.strftime('%Y-%m-%d %H:%M')}")
-    plt.xlabel("Longitude")
-    plt.ylabel("Latitude")
-    
-    # Save the figure
-    filename = os.path.join(output_folder, f"heatmap_{current_time.strftime('%Y%m%d_%H%M')}.png")
-    plt.savefig(filename)
-    plt.close()  # Close the figure to avoid memory issues
+    # Reset the resetting heatmap if the current time is divisible by 30 minutes
+    if current_time.minute % 30 == 0 and current_time.second == 0:  # Check if it's the start of a new 30-minute interval
+        heatmap_grid_reset.fill(0)  # Reset the grid
+        print("Resetting the 30-minute heatmap")
+
+    # Create and save the resetting heatmap
+    plt.figure(figsize=(12, 8))  # Set figure size for better quality
+    plt.imshow(heatmap_grid_reset, cmap='hot', interpolation='nearest', origin='lower',
+               extent=[x1, x2, y2, y1], aspect='auto')  # Use aspect='auto' for proper scaling
+    plt.axis('off')  # Turn off the axis
+    plt.savefig(os.path.join(output_folder_reset, f"heatmap_reset_{int(time.time())}.png"), bbox_inches='tight', pad_inches=0, dpi=300)  # Set dpi for better quality
+    plt.close()
 
 # Main loop: update every 2 minutes
 while True:
-    fetch_flights_and_update_heatmap()  # Fetch flights and update heatmap
+    fetch_flights_and_update_heatmaps()  # Fetch flights and update heatmaps
     
     # Wait for 2 minutes before the next iteration
-    print("Updated heatmap")
+    print("Updated heatmaps")
     time.sleep(120)  # Sleep for 2 minutes (120 seconds)
