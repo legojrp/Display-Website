@@ -32,12 +32,14 @@ def hello():
         return jsonify({'screen': 'weather', "theme": "dark"}), 200
     elif ip_addr == "127.0.0.1":
         return jsonify({'screen': 'display', "theme": "dark"}), 200
-@app.route('/ipad1', methods=['POST'])
+    else: 
+        return jsonify({'screen': 'weather', "theme": "dark"}), 200
+@app.route('/weather', methods=['POST'])
 def ipad1():
     data = request.get_json()
     print(data)
     return jsonify({'screen': 'weather', "theme": "dark"}), 200
-@app.route('/ipad2', methods=['POST'])
+@app.route('/flights', methods=['POST'])
 def ipad2():
     data = request.get_json()
     print(data)
