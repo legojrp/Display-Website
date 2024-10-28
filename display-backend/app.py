@@ -25,14 +25,13 @@ def after_request(response):
 
 @app.route('/', methods=['POST'])
 def hello():
-    data = request.get_json()
-    print(data)
-    if data["ipad"] == "1":
-        return jsonify({'screen': 'weather', "theme": "dark"}), 200
-    else :
+    ip_addr = request.remote_addr
+    if ip_addr == "192.168.0.154":
         return jsonify({'screen': 'flights', "theme": "dark"}), 200
-
-    return jsonify({'screen': 'weather', "theme": "dark"}), 200
+    elif ip_addr == "192.168.0.170":
+        return jsonify({'screen': 'weather', "theme": "dark"}), 200
+    elif ip_addr == "127.0.0.1":
+        return jsonify({'screen': 'display', "theme": "dark"}), 200
 @app.route('/ipad1', methods=['POST'])
 def ipad1():
     data = request.get_json()
