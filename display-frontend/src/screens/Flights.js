@@ -54,7 +54,7 @@ const Flights = ({ theme }) => {
     useEffect(() => {
         const interval = setInterval(() => {
             getFlightHeatmapUrls();
-        }, 600000); // 10 minutes
+        }, 120000); // 2 minutes
         return () => clearInterval(interval);
     }, []);
 
