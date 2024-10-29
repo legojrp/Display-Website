@@ -90,7 +90,6 @@ def flightdata():
         type = "reset_hour"
     ani = HeatmapAnimation()
     frames = ani.fetch_frames(duration, type)
-    print(frames)
     return jsonify(frames)
 
 
@@ -102,6 +101,13 @@ def serve_heatmap(frame_type, timestamp):
     :param timestamp: Timestamp of the heatmap image.
     :return: The heatmap image file or 404 if not found.
     """
+
+    print(frame_type, timestamp)
+
+    # Validate the frame type
+    if frame_type not in ["rolling", "reset_30_mins", "reset_hour"]:
+        abort(400)  # Invalid frame type
+
     if frame_type not in ["rolling", "reset_30_mins", "reset_hour"]:
         abort(402)  # Invalid frame type
     
