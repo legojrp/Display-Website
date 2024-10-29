@@ -40,7 +40,7 @@ const Flights = ({ theme }) => {
             .then(res => res.json())
             .then(data => {
                 const urls = data.map(([url, time]) => ({
-                    url: `http://192.168.0.244:5050/heatmap/${selectedType}/${time}.png`,
+                    url: `http://192.168.0.152:5050/heatmap/${selectedType}/${time}.png`,
                     time
                 }));
                 setImages(urls);
