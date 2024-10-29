@@ -52,7 +52,7 @@ const WeatherRadar = ({ theme }) => {
     useEffect(() => {
         const radarInterval = setInterval(() => {
             getRadarUrls();
-        }, 600000);
+        }, 60000);
         return () => clearInterval(radarInterval);
     }, [radarUrls]);
 
