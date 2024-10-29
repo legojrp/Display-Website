@@ -25,14 +25,22 @@ const Flights = ({ theme }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [bounds, setBounds] = useState([[49, -125], [24, -60]]);
     const [timestamp, setTimestamp] = useState('');
+    const [selectedType, setSelectedType] = useState('rolling');
+    const [selectedDuration, setSelectedDuration] = useState(30);
 
     // Fetch flight heatmaps from the server
     const getFlightHeatmapUrls = () => {
-        fetch("http://192.168.0.152:5050/flights")
+        fetch("http://192.168.0.152:5050/flightsdata", {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'POST',
+            body: JSON.stringify({ type: selectedType, duration: selectedDuration })
+        })
             .then(res => res.json())
             .then(data => {
                 const urls = data.map(([url, time]) => ({
-                    url: `http://192.168.0.152:5050/heatmap/accum/${time}.png`,
+                    url: `http://192.168.0.244:5050/heatmap/${selectedType}/${time}.png`,
                     time
                 }));
                 setImages(urls);
@@ -48,7 +56,7 @@ const Flights = ({ theme }) => {
     // Fetch URLs on initial render
     useEffect(() => {
         getFlightHeatmapUrls();
-    }, []);
+    }, [selectedType, selectedDuration]);
 
     // Refresh URLs every 10 minutes
     useEffect(() => {
@@ -61,8 +69,12 @@ const Flights = ({ theme }) => {
     // Update the timestamp display when the image changes
     useEffect(() => {
         if (images.length > 0) {
+            if (isNaN(currentIndex)) {
+                setCurrentIndex(0);
+            }
             const currentTimestamp = images[currentIndex]?.time;
             setTimestamp(convertToEST(currentTimestamp));
+            console.log(currentIndex)
         }
     }, [images, currentIndex]);
 
@@ -73,6 +85,20 @@ const Flights = ({ theme }) => {
         }, 1000); // 1 second interval
         return () => clearInterval(interval);
     }, [images.length]);
+
+    // Button selection styling
+    const buttonStyle = (isSelected) => ({
+        backgroundColor: isSelected ? '#808080' : '#050505',
+        border: '1px solid #808080',
+        color: 'white',
+        width: '40px',
+        height: '40px',
+        margin: '5px',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        textAlign: 'center',
+        zIndex: 999
+    });
 
     return (
         <div style={{ height: '100vh', width: '100vw', position: 'relative' }}>
@@ -110,6 +136,40 @@ const Flights = ({ theme }) => {
                 zIndex: 999
             }}>
                 {timestamp || 'Loading...'}
+            </div>
+            {/* Bottom right buttons */}
+            <div style={{
+                position: 'absolute',
+                bottom: '20px',
+                right: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-end'
+            }}>
+                {/* Type selection row */}
+                <div style={{ display: 'flex' }}>
+                    {['type', 'rolling', 'reset_30_mins', 'reset_hour'].map((type) => (
+                        <div
+                            key={type}
+                            style={buttonStyle(selectedType === type)}
+                            onClick={() => setSelectedType(type)}
+                        >
+                            {type === 'rolling' ? 'Roll' : type.split('_')[1]}
+                        </div>
+                    ))}
+                </div>
+                {/* Duration selection row */}
+                <div style={{ display: 'flex' }}>
+                    {[30, 60, 360, 1440].map((duration) => (
+                        <div
+                            key={duration}
+                            style={buttonStyle(selectedDuration === duration)}
+                            onClick={() => setSelectedDuration(duration)}
+                        >
+                            {duration === 360 ? '6h' : duration === 1440 ? '24h' : `${duration}m`}
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

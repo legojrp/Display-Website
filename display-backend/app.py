@@ -11,8 +11,8 @@ rv_api = RainViewerAPI()
 app = Flask(__name__)
 CORS(app, resources={r"*": {"origins": "*"}})
 
-BASE_PATH_ACCUM = os.path.join(os.path.dirname(__file__))
-BASE_PATH_RESET = os.path.join(os.path.dirname(__file__))
+BASE_PATH = os.path.join(os.path.dirname(__file__))
+
 
 @app.after_request
 def after_request(response):
@@ -79,10 +79,17 @@ def weather():
     return jsonify(response)
 
 
-@app.route("/flights")
-def flights():
+@app.route("/flightsdata", methods=['POST'])
+def flightdata():
+    data = request.get_json()
+    type= data["type"]
+    duration = data["duration"]
+    if type == "reset_30_mins":
+        type = "reset_30min"
+    elif type == "reset_hour":
+        type = "reset_hour"
     ani = HeatmapAnimation()
-    frames = ani.fetch_frames("past_6_hours", "accum")
+    frames = ani.fetch_frames(duration, type)
     print(frames)
     return jsonify(frames)
 
@@ -91,12 +98,17 @@ def flights():
 def serve_heatmap(frame_type, timestamp):
     """
     Serve heatmap image based on frame type and timestamp.
-    :param frame_type: Type of heatmap ('accum' or 'reset').
+    :param frame_type: Type of heatmap ('rolling', "reset_30_min', "reset_1_hour').
     :param timestamp: Timestamp of the heatmap image.
     :return: The heatmap image file or 404 if not found.
     """
-    if frame_type not in ['accum', 'reset']:
+    if frame_type not in ["rolling", "reset_30_mins", "reset_hour"]:
         abort(402)  # Invalid frame type
+    
+    if frame_type == "reset_30_mins":
+        frame_type = "reset_30min"
+    elif frame_type == "reset_hour":
+        frame_type = "reset_hour"
 
     # Get the heatmap file name from the database
     file_name = HeatmapAnimation().get_heatmap_path(frame_type, timestamp)
@@ -104,10 +116,7 @@ def serve_heatmap(frame_type, timestamp):
         abort(403)  # Not found in database
 
     # Determine the base path based on the frame type
-    if frame_type == 'accum':
-        folder_path = BASE_PATH_ACCUM
-    else:  # frame_type == 'reset'
-        folder_path = BASE_PATH_RESET
+    folder_path = BASE_PATH
 
     # Construct the full file path
     full_path = os.path.join(folder_path, file_name)

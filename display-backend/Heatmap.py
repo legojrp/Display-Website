@@ -7,9 +7,11 @@ class HeatmapAnimation:
         self.db_cursor = self.db_connection.cursor()
 
     def fetch_frames(self, animation_type, heatmap_type):
+        print(animation_type, heatmap_type)
         """Fetch heatmap frames based on animation type and current time."""
         target_time = datetime.now()  # Current time
         start_time = self.calculate_start_time(animation_type, target_time)
+        print(start_time)
         
         # Fetch frames based on the calculated time range
         frames = []
@@ -31,14 +33,14 @@ class HeatmapAnimation:
 
     def calculate_start_time(self, animation_type, target_time):
         """Calculate the start time based on the animation type."""
-        if animation_type == 'past_30_minutes':
+        if animation_type == 30:
             return target_time - timedelta(minutes=30)
-        elif animation_type == 'past_6_hours':
-            return target_time - timedelta(hours=6)
-        elif animation_type == 'past_24_hours':
+        elif animation_type == 60:
+            return target_time - timedelta(hours=1)
+        elif animation_type == 360:
+            return target_time - timedelta(minutes=360)
+        elif animation_type == 1440:
             return target_time - timedelta(days=1)
-        elif animation_type == 'past_28_days':
-            return target_time - timedelta(days=28)
         else:
             raise ValueError("Invalid animation type. Choose from ['past_30_minutes', 'past_6_hours', 'past_24_hours', 'past_28_days']")
 
