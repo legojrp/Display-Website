@@ -6,7 +6,7 @@ from flask import request, send_file, abort
 import os
 from Heatmap import HeatmapAnimation
 
-rv_api = RainViewerAPI()
+
 
 app = Flask(__name__)
 CORS(app, resources={r"*": {"origins": "*"}})
@@ -46,6 +46,7 @@ def ipad2():
 @app.route("/weather")
 def weather():
     """Return the radar and satellite frames as JSON."""
+    rv_api = RainViewerAPI()
     # Get radar data
     radar_data = rv_api.get_radar_data()
     print(radar_data)
