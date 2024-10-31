@@ -87,6 +87,8 @@ def flightdata():
         type = "reset_30min"
     elif type == "reset_hour":
         type = "reset_hour"
+
+    print(type, duration)
     ani = HeatmapAnimation()
     frames = ani.fetch_frames(duration, type)
     return jsonify(frames)
