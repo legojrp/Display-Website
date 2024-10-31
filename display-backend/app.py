@@ -76,7 +76,6 @@ def weather():
         "lon": lon,
         "zoom": zoom
     }
-    print(response)
     return jsonify(response)
 
 
