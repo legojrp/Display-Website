@@ -37,12 +37,10 @@ def hello():
 @app.route('/weather', methods=['POST'])
 def ipad1():
     data = request.get_json()
-    print(data)
     return jsonify({'screen': 'weather', "theme": "dark"}), 200
 @app.route('/flights', methods=['POST'])
 def ipad2():
     data = request.get_json()
-    print(data)
     return jsonify({'screen': 'flights', "theme": "dark"}), 200
 
 @app.route("/weather")
@@ -101,8 +99,6 @@ def serve_heatmap(frame_type, timestamp):
     :param timestamp: Timestamp of the heatmap image.
     :return: The heatmap image file or 404 if not found.
     """
-
-    print(frame_type, timestamp)
 
     # Validate the frame type
     if frame_type not in ["rolling", "reset_30_mins", "reset_hour"]:
