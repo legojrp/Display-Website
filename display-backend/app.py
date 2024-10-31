@@ -50,6 +50,7 @@ def weather():
     """Return the radar and satellite frames as JSON."""
     # Get radar data
     radar_data = rv_api.get_radar_data()
+    print(radar_data)
     # Get satellite data
     satellite_data = rv_api.get_satellite_data()
 
