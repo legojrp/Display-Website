@@ -30,6 +30,7 @@ const Flights = ({ theme }) => {
 
     // Fetch flight heatmaps from the server
     const getFlightHeatmapUrls = () => {
+        console.log(selectedType, selectedDuration)
         fetch("http://192.168.0.152:5050/flightsdata", {
             headers: {
                 'Content-Type': 'application/json'

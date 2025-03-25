@@ -7,11 +7,9 @@ class HeatmapAnimation:
         self.db_cursor = self.db_connection.cursor()
 
     def fetch_frames(self, animation_type, heatmap_type):
-        print(animation_type, heatmap_type)
         """Fetch heatmap frames based on animation type and current time."""
         target_time = datetime.now()  # Current time
         start_time = self.calculate_start_time(animation_type, target_time)
-        print(start_time)
         
         # Fetch frames based on the calculated time range
         frames = []
