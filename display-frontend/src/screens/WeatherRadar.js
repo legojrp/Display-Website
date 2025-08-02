@@ -29,7 +29,7 @@ const WeatherRadar = ({ theme }) => {
     const [timestamp, setTimestamp] = useState('');
 
     const getRadarUrls = () => {
-        fetch("http://192.168.0.152:5050/weather")
+        fetch("http://192.168.0.150:5050/weather")
             .then(res => res.json())
             .then(data => {
                 const urls = data.radar.past.map(url => ({ url: url.url, time: url.time }));
@@ -81,14 +81,39 @@ const WeatherRadar = ({ theme }) => {
     }, [radarUrls, currentIndex]);
     
     useEffect(() => {
+        if (images.length === 0) return;
+        
         const interval = setInterval(() => {
-            if (isNaN(currentIndex)) {
-                setCurrentIndex(0);
-            }
-            setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
-        }, 1000);
+            setCurrentIndex(prevIndex => {
+                if (isNaN(prevIndex)) {
+                    return 0;
+                }
+                return (prevIndex + 1) % images.length;
+            });
+        }, 250); // 0.25 seconds for all frames
+        
         return () => clearInterval(interval);
-    }, [images.length, currentIndex]);
+    }, [images.length]);
+    
+    // Separate effect to handle the pause on the last frame
+    useEffect(() => {
+        if (images.length === 0) return;
+        
+        let pauseTimeout;
+        
+        // If we're on the last frame, pause for extra time
+        if (currentIndex === images.length - 1) {
+            pauseTimeout = setTimeout(() => {
+                setCurrentIndex(0); // Jump back to first frame after pause
+            }, 2000); // 2 second pause on last frame
+        }
+        
+        return () => {
+            if (pauseTimeout) {
+                clearTimeout(pauseTimeout);
+            }
+        };
+    }, [currentIndex, images.length]);
 
     return (
         <div style={{ height: '100vh', width: '100vw', position: 'relative' }}>

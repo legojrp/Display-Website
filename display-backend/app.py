@@ -1,3 +1,4 @@
+from urllib import response
 from flask import Flask
 from flask_cors import CORS
 from flask import jsonify
@@ -5,7 +6,8 @@ from RainViewerAPI import RainViewerAPI
 from flask import request, send_file, abort
 import os
 from Heatmap import HeatmapAnimation
-
+import requests
+from goesdata import get_goes19_image_base64
 
 
 app = Flask(__name__)
@@ -38,10 +40,15 @@ def hello():
 def ipad1():
     data = request.get_json()
     return jsonify({'screen': 'weather', "theme": "dark"}), 200
-@app.route('/flights', methods=['POST'])
+@app.route('/earth', methods=['POST'])
 def ipad2():
     data = request.get_json()
-    return jsonify({'screen': 'flights', "theme": "dark"}), 200
+    return jsonify({'screen': 'earth', "theme": "dark"}), 200
+@app.route("/radar", methods=['POST'])
+def ipad3():
+    data = request.get_json()
+    return jsonify({'screen': 'radar', "theme": "dark"}), 200
+
 
 @app.route("/weather")
 def weather():
@@ -93,6 +100,29 @@ def flightdata():
     frames = ani.fetch_frames(duration, type)
     return jsonify(frames)
 
+
+@app.route("/radar-json", methods=['POST'])
+def radar_json():
+    try:
+        response = requests.get("http://192.168.0.105:8754/flights.json", timeout=5)
+        response.raise_for_status()
+
+        return jsonify(response.json())
+    except Exception as e:
+        print("Error:", e)
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/goes-image', methods=['GET'])
+def goes_image():
+    """
+    Endpoint to get the latest GOES-16 CONUS image as a Base64 encoded PNG.
+    """
+    base64_image = get_goes19_image_base64()
+    
+    if base64_image is None:
+        return jsonify({'error': 'Failed to fetch GOES image'}), 500
+    
+    return jsonify({'image': base64_image}), 200
 
 @app.route('/heatmap/<frame_type>/<int:timestamp>.png')
 def serve_heatmap(frame_type, timestamp):

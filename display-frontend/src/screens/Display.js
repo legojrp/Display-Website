@@ -1,6 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import WeatherRadar from "./WeatherRadar"
 import Flights from './Flights';
+import Radar from './Radar';
+import Earth from './Earth';
 
 function Display() {
     const [screen, setScreen] = useState(null);
@@ -14,7 +16,7 @@ function Display() {
         const fetchData = () => {
             const url = new URL(window.location.href);
             const path = url.pathname.split('/').pop();
-            fetch(`http://192.168.0.152:5050/${path}`, {
+            fetch(`http://192.168.0.150:5050/${path}`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
@@ -40,8 +42,6 @@ function Display() {
         return () => clearInterval(screenInterval);
     }, []);
     
-    
-    
 
     switch (screen) {
         case "weather":
@@ -54,6 +54,18 @@ function Display() {
             return (
                 <div style={{background: theme === 'dark' ? 'black' : 'white'}}>
                     <Flights theme={theme}/>
+                </div>
+            );
+        case "radar":
+            return (
+                <div style={{background: theme === 'dark' ? 'black' : 'white'}}>
+                    <Radar theme={theme}/>
+                </div>
+            );
+        case "earth":
+            return (
+                <div style={{background: theme === 'dark' ? 'black' : 'white'}}>
+                    <Earth theme={theme}/>
                 </div>
             );
         case "display":
