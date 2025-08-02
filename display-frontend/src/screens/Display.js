@@ -16,7 +16,7 @@ function Display() {
         const fetchData = () => {
             const url = new URL(window.location.href);
             const path = url.pathname.split('/').pop();
-            fetch(`http://192.168.0.150:5050/${path}`, {
+            fetch(`${process.env.REACT_APP_SERVER_URL}/${path}`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'

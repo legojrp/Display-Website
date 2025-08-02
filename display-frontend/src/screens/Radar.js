@@ -94,7 +94,7 @@ const Radar = ({ theme }) => {
     // Function to fetch aircraft data from your FR24 feeder
     const fetchAircraftData = async () => {
         try {
-            const response = await fetch('http://192.168.0.150:5050/radar-json', {
+            const response = await fetch(`${process.env.REACT_APP_SERVER_URL}/radar-json`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

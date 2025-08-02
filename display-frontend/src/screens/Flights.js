@@ -31,7 +31,7 @@ const Flights = ({ theme }) => {
     // Fetch flight heatmaps from the server
     const getFlightHeatmapUrls = () => {
         console.log(selectedType, selectedDuration)
-        fetch("http://192.168.0.152:5050/flightsdata", {
+        fetch(`${process.env.REACT_APP_SERVER_URL}/flightsdata`, {
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -41,7 +41,7 @@ const Flights = ({ theme }) => {
             .then(res => res.json())
             .then(data => {
                 const urls = data.map(([url, time]) => ({
-                    url: `http://192.168.0.152:5050/heatmap/${selectedType}/${time}.png`,
+                    url: `${process.env.REACT_APP_SERVER_URL}/heatmap/${selectedType}/${time}.png`,
                     time
                 }));
                 setImages(urls);

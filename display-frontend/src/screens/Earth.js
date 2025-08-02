@@ -29,7 +29,7 @@ const Earth = ({ theme }) => {
     const fetchGoesImage = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://192.168.0.150:5050/goes-image', {
+            const response = await fetch(`${process.env.REACT_APP_SERVER_URL}/goes-image`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
