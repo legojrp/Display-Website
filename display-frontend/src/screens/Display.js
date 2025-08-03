@@ -3,6 +3,7 @@ import WeatherRadar from "./WeatherRadar"
 import Flights from './Flights';
 import Radar from './Radar';
 import Earth from './Earth';
+import News from './News';
 
 function Display() {
     const [screen, setScreen] = useState(null);
@@ -66,6 +67,12 @@ function Display() {
             return (
                 <div style={{background: theme === 'dark' ? 'black' : 'white'}}>
                     <Earth theme={theme}/>
+                </div>
+            );
+        case "news":
+            return (
+                <div style={{background: theme === 'dark' ? 'black' : 'white'}}>
+                    <News theme={theme}/>
                 </div>
             );
         case "display":

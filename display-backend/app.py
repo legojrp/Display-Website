@@ -5,15 +5,37 @@ from flask import jsonify
 from RainViewerAPI import RainViewerAPI
 from flask import request, send_file, abort
 import os
-from Heatmap import HeatmapAnimation
 import requests
 from goesdata import get_goes19_image_base64
+from rss_feeds.ai_interaction import GeminiArticleRanker
+from rss_feeds.db_handler import DatabaseHandler
+from rss_feeds.aggregator import RSSAggregator
+import threading
+import time
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 app = Flask(__name__)
 CORS(app, resources={r"*": {"origins": "*"}})
 
 BASE_PATH = os.path.join(os.path.dirname(__file__))
+
+def rss_aggregate_and_rank():
+    agg = RSSAggregator(feeds_file="rss_feeds/feeds.json", db_path="rss_feeds/articles.db")
+    agg.aggregate_all_feeds()
+    ranker = GeminiArticleRanker(db_path="rss_feeds/articles.db", api_key=os.getenv("GEMINI_API_KEY"))
+    ranker.rank_pending_articles()
+
+def schedule_task(interval_seconds=1800):  # 1800 seconds = 30 minutes
+    while True:
+        rss_aggregate_and_rank()
+        time.sleep(interval_seconds)
+
+scheduler_thread = threading.Thread(target=schedule_task, daemon=True)
+scheduler_thread.start()
 
 
 @app.after_request
@@ -48,7 +70,10 @@ def ipad2():
 def ipad3():
     data = request.get_json()
     return jsonify({'screen': 'radar', "theme": "dark"}), 200
-
+@app.route("/news", methods=['POST'])
+def ipad4():
+    data = request.get_json()
+    return jsonify({'screen': 'news', "theme": "dark"}), 200
 
 @app.route("/weather")
 def weather():
@@ -85,20 +110,20 @@ def weather():
     return jsonify(response)
 
 
-@app.route("/flightsdata", methods=['POST'])
-def flightdata():
-    data = request.get_json()
-    type= data["type"]
-    duration = data["duration"]
-    if type == "reset_30_mins":
-        type = "reset_30min"
-    elif type == "reset_hour":
-        type = "reset_hour"
+# @app.route("/flightsdata", methods=['POST'])
+# def flightdata():
+#     data = request.get_json()
+#     type= data["type"]
+#     duration = data["duration"]
+#     if type == "reset_30_mins":
+#         type = "reset_30min"
+#     elif type == "reset_hour":
+#         type = "reset_hour"
 
-    print(type, duration)
-    ani = HeatmapAnimation()
-    frames = ani.fetch_frames(duration, type)
-    return jsonify(frames)
+#     print(type, duration)
+#     ani = HeatmapAnimation()
+#     frames = ani.fetch_frames(duration, type)
+#     return jsonify(frames)
 
 
 @app.route("/radar-json", methods=['POST'])
@@ -124,46 +149,11 @@ def goes_image():
     
     return jsonify({'image': base64_image}), 200
 
-@app.route('/heatmap/<frame_type>/<int:timestamp>.png')
-def serve_heatmap(frame_type, timestamp):
-    """
-    Serve heatmap image based on frame type and timestamp.
-    :param frame_type: Type of heatmap ('rolling', "reset_30_min', "reset_1_hour').
-    :param timestamp: Timestamp of the heatmap image.
-    :return: The heatmap image file or 404 if not found.
-    """
-
-    # Validate the frame type
-    if frame_type not in ["rolling", "reset_30_mins", "reset_hour"]:
-        abort(400)  # Invalid frame type
-
-    if frame_type not in ["rolling", "reset_30_mins", "reset_hour"]:
-        abort(402)  # Invalid frame type
-    
-    if frame_type == "reset_30_mins":
-        frame_type = "reset_30min"
-    elif frame_type == "reset_hour":
-        frame_type = "reset_hour"
-
-    # Get the heatmap file name from the database
-    file_name = HeatmapAnimation().get_heatmap_path(frame_type, timestamp)
-    if file_name is None:
-        abort(403)  # Not found in database
-
-    # Determine the base path based on the frame type
-    folder_path = BASE_PATH
-
-    # Construct the full file path
-    full_path = os.path.join(folder_path, file_name)
-
-    print(full_path)
-    # Serve the file
-    if os.path.exists(full_path):
-        
-        return send_file(full_path, mimetype='image/png')
-    else:
-        abort(404) 
-
+@app.route('/get_news', methods=['GET'])
+def get_news():
+    agg = RSSAggregator(feeds_file="rss_feeds/feeds.json", db_path="rss_feeds/articles.db")
+    articles = agg.fetch_articles_algorithmically()
+    return jsonify(articles)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True)

@@ -1,0 +1,42 @@
+[
+  {
+    "article_id": 195,
+    "title": "Here is the latest.",
+    "score": 0.0,
+    "summary": "This article is empty and provides no content.",
+    "reasoning": "The article lacks any information, rendering it completely irrelevant and without value.",
+    "batch": 1
+  },
+  {
+    "article_id": 182,
+    "title": "Stock Market Posts Worst Week in Months on Renewed Economic Fears",
+    "score": 80.0,
+    "summary": "This article reports on a significant downturn in the stock market, triggered by concerns about the US labor market and new tariffs.  It highlights the global impact of these economic anxieties.",
+    "reasoning": "This is newsworthy and relevant to the user's interest in geopolitical and economic matters. The impact on the global market makes it important and informative.",
+    "batch": 1
+  },
+  {
+    "article_id": 101,
+    "title": "How the Threat of Trump\u2019s Highest Tariff Derailed an African Nation",
+    "score": 75.0,
+    "summary": "This article discusses the negative consequences of threatened high tariffs on Lesotho, even after the tariffs were reduced. It illustrates the real-world impact of trade policy on vulnerable nations.",
+    "reasoning": "This article is informative and highlights the geopolitical consequences of US trade policy.  The focus on a specific nation and the human impact adds relevance, although the lasting impact might be debated.",
+    "batch": 1
+  },
+  {
+    "article_id": 96,
+    "title": "Putin Blames Frustration Over Ukraine Talks on \u2018Inflated Expectations\u2019",
+    "score": 88.0,
+    "summary": "This article covers Russian President Putin's response to pressure regarding the situation in Ukraine.  He attributes stalled negotiations to inflated expectations.",
+    "reasoning": "This article is highly relevant due to its geopolitical significance.  The ongoing conflict in Ukraine is a major international issue, and Putin's statement is newsworthy and provides insight into the situation.",
+    "batch": 1
+  },
+  {
+    "article_id": 94,
+    "title": "SpaceX, NASA Launch Astronauts to Space Station as Clouds Stay Just Far Enough Away",
+    "score": 70.0,
+    "summary": "This article reports on the successful launch of SpaceX and NASA astronauts to the International Space Station after a previous delay. ",
+    "reasoning": "This is newsworthy and aligns with the user's interest in science and technology. However, the lasting impact is less significant than other geopolitical events.",
+    "batch": 1
+  }
+]

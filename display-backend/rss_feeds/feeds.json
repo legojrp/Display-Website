@@ -1,0 +1,80 @@
+[
+    {
+        "title": "Fox 59",
+        "url": "https://fox59.com/feed/",
+        "category": "News",
+        "language": "en"
+    },
+    {
+        "title": "WISH-TV",
+        "url": "https://www.wishtv.com/feed/",
+        "category": "News",
+        "language": "en"
+    },
+    {
+        "title": "WTHR",
+        "url": "https://www.wthr.com/feeds/rss",
+        "category": "News",
+        "language": "en"
+    },
+    {
+        "title": "WRTV",
+        "url": "https://www.wrtv.com/feeds/rss",
+        "category": "News",
+        "language": "en"
+    },
+    {
+        "title": "NASA Aeronautics",
+        "url": "https://www.nasa.gov/aeronautics/feed/",
+        "category": "Science",
+        "language": "en"
+    },
+    {
+        "title": "NASA Technology",
+        "url": "https://www.nasa.gov/technology/feed/",
+        "category": "Science",
+        "language": "en"
+    },
+    {
+        "title": "NASA Space Station",
+        "url": "https://www.nasa.gov/missions/station/feed/",
+        "category": "Science",
+        "language": "en"
+    },
+    {
+        "title": "NASA Artemis",
+        "url": "https://www.nasa.gov/missions/artemis/feed/",
+        "category": "Science",
+        "language": "en"
+    },
+    {
+        "title": "NYT World",
+        "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+        "category": "News",
+        "language": "en"
+    },
+    {
+        "title": "NYT Politics",
+        "url": "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
+        "category": "News",
+        "language": "en"
+    },
+    {
+        "title": "NYT U.S.",
+        "url": "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
+        "category": "News",
+        "language": "en"
+    },
+    {
+        "title": "NYT Technology",
+        "url": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+        "category": "Technology",
+        "language": "en"
+    },
+    {
+        "title": "NYT Economy",
+        "url": "https://rss.nytimes.com/services/xml/rss/nyt/Economy.xml",
+        "category": "Economy",
+        "language": "en"
+    }
+]   
