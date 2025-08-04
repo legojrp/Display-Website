@@ -13,6 +13,10 @@ from rss_feeds.aggregator import RSSAggregator
 import threading
 import time
 from dotenv import load_dotenv
+from pictures.picture_handler import save_uploaded_picture
+from pictures.picture_handler import get_pictures_algorithmically
+from pictures.picture_handler import update_picture_likes
+from pictures.picture_handler import toggle_picture_visibility
 
 # Load environment variables from .env file
 load_dotenv()
@@ -24,6 +28,9 @@ CORS(app, resources={r"*": {"origins": "*"}})
 BASE_PATH = os.path.join(os.path.dirname(__file__))
 
 def rss_aggregate_and_rank():
+    if (os.getenv("run_rss_aggregator", "False").lower() != "true"):
+        print("RSS Aggregation and Ranking is disabled.")
+        return
     agg = RSSAggregator(feeds_file="rss_feeds/feeds.json", db_path="rss_feeds/articles.db")
     agg.aggregate_all_feeds()
     ranker = GeminiArticleRanker(db_path="rss_feeds/articles.db", api_key=os.getenv("GEMINI_API_KEY"))
@@ -74,6 +81,10 @@ def ipad3():
 def ipad4():
     data = request.get_json()
     return jsonify({'screen': 'news', "theme": "dark"}), 200
+@app.route("/pictures", methods=['POST'])
+def ipad5():
+    data = request.get_json()
+    return jsonify({'screen': 'pictures', "theme": "dark"}), 200
 
 @app.route("/weather")
 def weather():
@@ -154,6 +165,99 @@ def get_news():
     agg = RSSAggregator(feeds_file="rss_feeds/feeds.json", db_path="rss_feeds/articles.db")
     articles = agg.fetch_articles_algorithmically()
     return jsonify(articles)
+
+@app.route('/pictures/get_pictures', methods=['GET'])
+def get_pictures_endpoint():
+    """
+    Endpoint to retrieve pictures from the system
+    """
+    try:
+        
+        # Get optional parameters if any
+        limit = request.args.get('limit', default=10, type=int)
+        
+        # Get pictures from the handler
+        pictures = get_pictures_algorithmically(limit=limit)
+
+        return jsonify({
+            'success': True,
+            'pictures': pictures
+        })
+    except Exception as e:
+        print(f"Error retrieving pictures: {str(e)}")
+        return jsonify({'error': f'Failed to retrieve pictures: {str(e)}'}), 500
+
+@app.route("/pictures/upload_picture", methods=['POST'])
+def upload_picture():
+    """
+    Endpoint to receive uploaded pictures in base64 format
+    """
+    if 'picture' not in request.json:
+        return jsonify({'error': 'No picture provided'}), 400
+    
+    try:
+        # Get base64 encoded image from request
+        base64_image = request.json['picture']
+        
+        # Extract metadata if available
+        title = request.json.get('title', 'Untitled')
+        description = request.json.get('description', '')
+        
+        # Import the picture handler function (to be implemented)
+        
+        # Save the picture and get result
+        result = save_uploaded_picture(base64_image, title, description)
+        
+        return jsonify({'success': True, 'message': 'Picture uploaded successfully', 'data': result}), 200
+    
+    except Exception as e:
+        print(f"Error handling picture upload: {str(e)}")
+        return jsonify({'error': f'Failed to process uploaded picture: {str(e)}'}), 500
+
+@app.route("/pictures/like_picture", methods=['POST'])
+def like_picture():
+    """
+    Endpoint to like a picture.
+    """
+    if 'filename' not in request.json:
+        return jsonify({'error': 'No filename provided'}), 400
+
+    filename = request.json['filename']
+    result = update_picture_likes(filename, increment=True)
+
+    return jsonify(result)
+
+@app.route("/pictures/toggle_picture_visibility", methods=['POST'])
+def toggle_picture_visibility():
+    """
+    Endpoint to toggle the visibility of a picture.
+    """
+    if 'filename' not in request.json:
+        return jsonify({'error': 'No filename provided'}), 400
+
+    filename = request.json['filename']
+    result = toggle_picture_visibility(filename)
+
+    return jsonify(result)
+
+@app.route("/pictures/<filename>", methods=['GET'])
+def serve_picture(filename):
+    """
+    Endpoint to serve picture files.
+    """
+    try:
+        # Construct the file path - now looking in uploads subfolder
+        file_path = os.path.join(BASE_PATH, "pictures", "uploads", filename)
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            abort(404)
+        
+        # Serve the file
+        return send_file(file_path, mimetype='image/png')
+    except Exception as e:
+        print(f"Error serving picture {filename}: {str(e)}")
+        abort(500)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True)

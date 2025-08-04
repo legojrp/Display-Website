@@ -4,6 +4,7 @@ import Flights from './Flights';
 import Radar from './Radar';
 import Earth from './Earth';
 import News from './News';
+import Pictures from './Pictures';
 
 function Display() {
     const [screen, setScreen] = useState(null);
@@ -73,6 +74,12 @@ function Display() {
             return (
                 <div style={{background: theme === 'dark' ? 'black' : 'white'}}>
                     <News theme={theme}/>
+                </div>
+            );
+        case "pictures":
+            return (
+                <div style={{background: theme === 'dark' ? 'black' : 'white'}}>
+                    <Pictures theme={theme}/>
                 </div>
             );
         case "display":
