@@ -2,3 +2,4 @@ flight_heatmaps
 .env
 **/articles.db
 articles.db
+display-backend/rss_feeds/articles.db
