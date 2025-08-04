@@ -1,2 +1,4 @@
 flight_heatmaps
 .env
+**/articles.db
+articles.db
