@@ -17,6 +17,8 @@ import base64
 # is a demonstration of how a programmer would implement the functionality.
 import goes2go.data
 
+goes2go.data.cache = None
+
 def get_goes19_image_base64():
     """
     Fetches the latest GOES-19 satellite True Color data using the `goes2go`
