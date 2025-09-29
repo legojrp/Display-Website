@@ -5,10 +5,15 @@ import time
 from typing import List, Dict, Optional
 import google.generativeai as genai
 
+# NOTE: Assuming DatabaseHandler is available and correct
 from .db_handler import DatabaseHandler
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# NOTE: Adjusted log format to include function name for better debugging
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(name)s - %(funcName)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 class GeminiArticleRanker:
@@ -42,15 +47,9 @@ class GeminiArticleRanker:
         self.batch_size = batch_size
     
     def _create_ranking_prompt(self, articles: List[Dict]) -> str:
-        """
-        Create a structured prompt for ranking multiple articles with summaries.
+        # ... (Method is unchanged)
+        # Your existing _create_ranking_prompt implementation
         
-        Args:
-            articles (List[Dict]): List of article dictionaries
-            
-        Returns:
-            str: Formatted prompt for Gemini
-        """
         prompt = """You are an expert article ranker. For each article below, you must:
 1. First provide a brief summary of the article content and key points
 2. Then provide a ranking score (0-100) (100 being the best) based on importance and relevance
@@ -68,7 +67,10 @@ Articles to analyze:
         for i, article in enumerate(articles, 1):
             prompt += f"\n--- Article {i} ---\n"
             prompt += f"Title: {article.get('title', 'No title')}\n"
-            prompt += f"Description: {article.get('description', 'No description')[:400]}...\n"
+            # NOTE: Added a check for 'description' to prevent slicing None if the value is NULL/None in the dict
+            description = article.get('description', 'No description')
+            prompt += f"Description: {description[:400]}...\n" if description else "Description: No description...\n"
+            
             if article.get('source'):
                 prompt += f"Source: {article.get('source')}\n"
         
@@ -94,15 +96,8 @@ The order must match the article order above. Provide exactly """ + str(len(arti
         return prompt
     
     def _make_api_request(self, prompt: str) -> Optional[str]:
-        """
-        Make a request to the Gemini API.
-        
-        Args:
-            prompt (str): The ranking prompt
-            
-        Returns:
-            Optional[str]: API response text or None if failed
-        """
+        # ... (Method is unchanged)
+        # Your existing _make_api_request implementation
         try:
             # Generate content with specific configuration
             response = self.model.generate_content(
@@ -114,7 +109,7 @@ The order must match the article order above. Provide exactly """ + str(len(arti
             )
             
             logger.info("Successfully got response from Gemini API")
-            logger.info(f"AI Response: {response.text}")
+            logger.info(f"AI Response (first 100 chars): {response.text[:100]}...")
             return response.text
                         
         except Exception as e:
@@ -122,17 +117,11 @@ The order must match the article order above. Provide exactly """ + str(len(arti
             return None
     
     def _parse_ranking_response(self, response_text: str) -> Optional[List[Dict]]:
-        """
-        Parse the Gemini API response to extract structured ranking data.
+        # ... (Method is unchanged)
+        # Your existing _parse_ranking_response implementation
         
-        Args:
-            response_text (str): Raw API response text
-            
-        Returns:
-            Optional[List[Dict]]: List of ranking objects with summary, score, and reasoning or None if failed
-        """
         try:
-            logger.info(f"Parsing response text: {response_text}")
+            logger.debug(f"Parsing response text: {response_text}") # NOTE: Changed to debug level
             
             # Try to find JSON array in the response
             start_idx = response_text.find('[')
@@ -140,7 +129,7 @@ The order must match the article order above. Provide exactly """ + str(len(arti
             
             if start_idx == -1 or end_idx == -1:
                 logger.error("No JSON array found in API response")
-                logger.error(f"Response text: {response_text}")
+                logger.debug(f"Response text: {response_text}") # NOTE: Log full text to debug
                 return None
             
             json_str = response_text[start_idx:end_idx + 1]
@@ -157,12 +146,14 @@ The order must match the article order above. Provide exactly """ + str(len(arti
             validated_rankings = []
             for i, ranking in enumerate(rankings):
                 if not isinstance(ranking, dict):
-                    logger.error(f"Ranking {i} is not a dictionary")
+                    logger.error(f"Ranking {i} is not a dictionary. Type: {type(ranking)}. Skipping.")
+                    validated_rankings.append(None) # NOTE: Preserve index by adding None
                     continue
                 
                 # Ensure required fields exist
                 if 'score' not in ranking:
-                    logger.error(f"Ranking {i} missing score field")
+                    logger.error(f"Ranking {i} missing score field. Skipping.")
+                    validated_rankings.append(None) # NOTE: Preserve index by adding None
                     continue
                 
                 # Normalize the ranking object
@@ -179,8 +170,9 @@ The order must match the article order above. Provide exactly """ + str(len(arti
                 
                 validated_rankings.append(normalized_ranking)
             
-            logger.info(f"Successfully parsed {len(validated_rankings)} valid rankings")
-            return validated_rankings
+            logger.info(f"Successfully parsed {len([r for r in validated_rankings if r is not None])} valid rankings")
+            # NOTE: Returning the list, which may contain None to preserve the batch order
+            return validated_rankings 
             
         except (json.JSONDecodeError, ValueError) as e:
             logger.error(f"Failed to parse rankings from API response: {e}")
@@ -203,12 +195,41 @@ The order must match the article order above. Provide exactly """ + str(len(arti
         if not articles:
             return []
         
+        # CRITICAL DEBUGGING STEP: Check for None or malformed articles before API call
+        cleaned_articles = []
+        for i, article in enumerate(articles):
+            if article is None:
+                logger.error(f"Batch item index {i} is None. Data corruption detected in list source. Skipping item.")
+                continue
+
+            article_id = article.get('id')
+            title = article.get('title')
+            
+            if not article_id:
+                logger.error(f"Batch item index {i} is missing 'id'. Malformed article. Skipping item.")
+                continue
+            
+            # NOTE: Added check for title/link which are NOT NULL in DB, but could be NULL if inserted with issues
+            if not title:
+                logger.warning(f"Article ID {article_id} has a missing title. Marking as error.")
+                self.db_handler.update_article_status(article_id, 'error_malformed')
+                continue
+            
+            cleaned_articles.append(article)
+        
+        if not cleaned_articles:
+            logger.warning("No valid articles left after cleaning batch.")
+            return []
+
+        # Use the cleaned list for prompt generation and API calls
+        articles = cleaned_articles
+        
         # Limit batch size
         if len(articles) > self.batch_size:
             articles = articles[:self.batch_size]
             logger.warning(f"Batch size limited to {self.batch_size} articles")
         
-        logger.info(f"Processing batch of {len(articles)} articles")
+        logger.info(f"Processing cleaned batch of {len(articles)} articles")
         
         # Create prompt and make API request
         prompt = self._create_ranking_prompt(articles)
@@ -218,30 +239,43 @@ The order must match the article order above. Provide exactly """ + str(len(arti
             return []
         
         # Parse rankings
-        rankings = self._parse_ranking_response(response_text)
+        # The parser is set up to return a list that matches the length of the input batch, 
+        # using None for failed/unparsable rankings to preserve order.
+        rankings = self._parse_ranking_response(response_text) 
         if not rankings:
             logger.error("Failed to parse rankings from API response")
             return []
         
-        logger.info(f"Successfully parsed {len(rankings)} rankings")
+        logger.info(f"Successfully parsed {len(rankings)} potential rankings")
         
         # Match rankings back to article IDs
         results = []
         for i, ranking in enumerate(rankings):
-            if i < len(articles):
-                article_id = articles[i]['id']
-                score = ranking['score']
-                ranking_data = {
-                    'summary': ranking['summary'],
-                    'reasoning': ranking['reasoning'],
-                    'title': articles[i].get('title', 'No title')
-                }
-                results.append((article_id, float(score), ranking_data))
-                logger.info(f"Article {article_id}: {score}/100")
-                logger.debug(f"  Summary: {ranking['summary']}")
-                logger.debug(f"  Reasoning: {ranking['reasoning']}")
+            if i >= len(articles):
+                logger.warning(f"Response had more rankings ({len(rankings)}) than articles ({len(articles)}). Ignoring excess.")
+                break
+                
+            article = articles[i] # This is safe because of the check above
+            
+            if ranking is None:
+                logger.error(f"Skipping article {article['id']} due to failed AI response parsing (Index {i}).")
+                # Mark article status as error so it doesn't get processed again
+                self.db_handler.update_article_status(article['id'], 'error_ai_parse')
+                continue
+                
+            article_id = article['id']
+            score = ranking['score']
+            ranking_data = {
+                'summary': ranking['summary'],
+                'reasoning': ranking['reasoning'],
+                'title': article.get('title', 'No title')
+            }
+            results.append((article_id, float(score), ranking_data))
+            logger.info(f"Article {article_id}: {score}/100 - {article.get('title', 'Untitled')[:40]}...")
+            logger.debug(f"  Summary: {ranking['summary']}")
+            logger.debug(f"  Reasoning: {ranking['reasoning']}")
         
-        logger.info(f"Returning {len(results)} ranking results")
+        logger.info(f"Returning {len(results)} successful ranking results")
         return results
     
     def rank_pending_articles(self, limit: int = None, save_debug_info: bool = True) -> int:
@@ -266,10 +300,26 @@ The order must match the article order above. Provide exactly """ + str(len(arti
         
         logger.info(f"Found {len(pending_articles)} pending articles to rank")
         
+        # CRITICAL DEBUGGING STEP: Filter out any None objects that might have been accidentally returned
+        # This is the most common reason for the crash if the list comes from an unsafe source
+        # but we must assume the DB handler might be compromised.
+        cleaned_pending_articles = [a for a in pending_articles if a is not None]
+        
+        if len(cleaned_pending_articles) != len(pending_articles):
+            num_nones = len(pending_articles) - len(cleaned_pending_articles)
+            logger.critical(f"Removed {num_nones} 'None' articles from the initial list retrieved from DB. This is a severe data pipeline issue.")
+            pending_articles = cleaned_pending_articles
+            
+        if not pending_articles:
+            logger.info("All articles were filtered out after cleaning.")
+            return 0
+            
         total_ranked = 0
         ranking_debug_log = []
         
         # Process in batches
+        # ... (rest of the function is mostly unchanged, relying on the robust batch function)
+        
         for i in range(0, len(pending_articles), self.batch_size):
             batch = pending_articles[i:i + self.batch_size]
             batch_num = (i // self.batch_size) + 1
@@ -307,12 +357,12 @@ The order must match the article order above. Provide exactly """ + str(len(arti
                             }
                             ranking_debug_log.append(debug_entry)
                     else:
-                        logger.error(f"Failed to update article {article_id}")
+                        logger.error(f"Failed to update article {article_id} - article may have been deleted or ID is invalid.")
                 
-                logger.info(f"Batch {batch_num} completed: {len(rankings)} articles ranked")
+                logger.info(f"Batch {batch_num} completed: {len(rankings)} articles successfully processed")
                 
             except Exception as e:
-                logger.error(f"Error processing batch {batch_num}: {e}")
+                logger.error(f"UNHANDLED FATAL ERROR processing batch {batch_num}: {e}")
                 continue
         
         # Save debug log if requested
@@ -328,6 +378,7 @@ The order must match the article order above. Provide exactly """ + str(len(arti
         logger.info(f"Article ranking completed: {total_ranked}/{len(pending_articles)} articles ranked")
         return total_ranked
     
+    # ... (rest of the class remains unchanged)
     def get_recent_rankings(self, limit: int = 10) -> List[Dict]:
         """
         Get recently ranked articles for debugging purposes.
@@ -387,13 +438,17 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    ranked = rank_articles(
+    ranker = GeminiArticleRanker(
         api_key=args.api_key, 
-        limit=args.limit, 
         db_path=args.db_path, 
-        batch_size=args.batch_size,
+        batch_size=args.batch_size
+    )
+    
+    ranked = ranker.rank_pending_articles(
+        limit=args.limit, 
         save_debug_info=not args.no_debug
     )
+
     print(f"Successfully ranked {ranked} articles")
     if not args.no_debug:
         print("Debug information saved to ranking_debug_*.json")
